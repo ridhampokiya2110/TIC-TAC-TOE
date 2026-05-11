@@ -1,23 +1,38 @@
 pipeline {
     agent any
+    
+    environment {
+        // Fetching secrets from Jenkins Vault
+        DOCKER_CREDS = credentials('dockerhub-creds')
+        // Dhyan se niche apna Docker Hub ka username daalna
+        IMAGE_NAME = "ridhampokiya/day87-app" 
+    }
 
     stages {
-        stage('Build..') {
+        stage('Checkout..') {
             steps {
-                echo 'Building the application layers...'
-                // Yahan actual docker build command aati hai
+                checkout scm
             }
         }
-        stage('Test..') {
+        
+        stage('Build Image..') {
             steps {
-                echo 'Running security and unit tests...'
-                // Yahan testing scripts aati hain
+                echo "Building Docker Image version: ${env.BUILD_ID}"
+                // Windows ke liye bat use kar rahe hain
+                bat "docker build -t ${IMAGE_NAME}:${env.BUILD_ID} ."
+                bat "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
-        stage('Deploy..!') {
+        
+        stage('Push to Docker Hub..!!!') {
             steps {
-                echo 'Deploying application to production server...'
-                // Yahan ECR push ya EC2 run command aati hai
+                echo "Logging into Docker Hub securely..."
+                // Secret password ko pipeline print nahi karegi (hide kar degi)
+                bat "echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin"
+                
+                echo "Pushing Image..."
+                bat "docker push ${IMAGE_NAME}:${env.BUILD_ID}"
+                bat "docker push ${IMAGE_NAME}:latest"
             }
         }
     }
