@@ -5,7 +5,7 @@ pipeline {
         DOCKER_CREDS = credentials('dockerhub-creds')
         IMAGE_NAME = "ridhampokiya/day87-app" 
         // Niche apna EC2 ka Public IP daalo
-        EC2_IP = "13.234.xx.xx" 
+        EC2_IP = "32.197.122.63" 
         EC2_USER = "ubuntu"
     }
 
