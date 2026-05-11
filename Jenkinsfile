@@ -28,12 +28,21 @@ pipeline {
                 bat "docker push ${IMAGE_NAME}:latest"
             }
         }
-        stage('Deploy to EC2..!!') {
+        stage('Deploy to EC2..!') {
     steps {
-        echo "Direct Deployment via Batch..."
+        echo "Tic-Tac-Toe Deployment: Executing Permission Overhaul..."
         withCredentials([sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'PEM_FILE')]) {
-        
-            bat 'ssh -o StrictHostKeyChecking=no -i %PEM_FILE% ' + "${EC2_USER}@${EC2_IP}" + ' "sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest"'
+            bat """
+            @echo off
+            :: 1. Forcefully strip ALL permissions and only give to the Current User
+            powershell -Command "Start-Process powershell -ArgumentList '-Command \"icacls ${PEM_FILE} /inheritance:r; icacls ${PEM_FILE} /grant:r \${env:USERNAME}:R\"' -Verb RunAs"
+
+            :: 2. Small delay to let Windows apply permissions
+            timeout /t 2 /nobreak > nul
+
+            :: 3. Execute SSH
+            ssh -i "%PEM_FILE%" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${EC2_USER}@${EC2_IP} "sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest"
+            """
                 }
             }
         }
