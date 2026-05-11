@@ -29,10 +29,10 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2..!!') {
+        stage('Deploy to EC2 🌍') {
             steps {
                 echo "Connecting to AWS EC2 and Deploying the App..."
-                sshagent(['ec2-key']) {
+                sshagent(credentials: ['ec2-key']) {
                     bat "ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} \"sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest\""
                 }
             }
