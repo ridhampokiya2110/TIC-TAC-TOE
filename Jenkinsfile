@@ -30,18 +30,18 @@ pipeline {
         }
         stage('Deploy to EC2..!') {
     steps {
-        echo "Tic-Tac-Toe Deployment: Executing Permission Overhaul..."
+        echo "Tic-Tac-Toe Deployment: Final Permission Overhaul..."
         withCredentials([sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'PEM_FILE')]) {
             bat """
             @echo off
-            :: 1. Forcefully strip ALL permissions and only give to the Current User
-            powershell -Command "Start-Process powershell -ArgumentList '-Command \"icacls ${PEM_FILE} /inheritance:r; icacls ${PEM_FILE} /grant:r \${env:USERNAME}:R\"' -Verb RunAs"
-
-            :: 2. Small delay to let Windows apply permissions
-            timeout /t 2 /nobreak > nul
-
-            :: 3. Execute SSH
-            ssh -i "%PEM_FILE%" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${EC2_USER}@${EC2_IP} "sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest"
+            :: 1. Is temporary file ki sari purani permissions ko jad se khatam karo
+            powershell -Command "icacls '%PEM_FILE%' /inheritance:r /grant:r 'SYSTEM:F' /grant:r 'Administrators:F' /grant:r '%USERNAME%:F'"
+            
+            :: 2. Check karne ke liye ki permissions set hui ya nahi (Logs me dikhega)
+            icacls "%PEM_FILE%"
+            
+            :: 3. Ab SSH chalao, lekin -q (quiet) mode me taaki faltu warnings na aaye
+            ssh -i "%PEM_FILE%" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -q ${EC2_USER}@${EC2_IP} "sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest"
             """
                 }
             }
