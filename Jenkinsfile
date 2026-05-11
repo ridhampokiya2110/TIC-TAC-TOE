@@ -3,25 +3,25 @@ pipeline {
     
     environment {
         DOCKER_CREDS = credentials('dockerhub-creds')
-        IMAGE_NAME = "tumhara-username/day87-app" 
+        IMAGE_NAME = "ridhampokiya/day87-app" 
         // Niche apna EC2 ka Public IP daalo
         EC2_IP = "13.234.xx.xx" 
         EC2_USER = "ubuntu"
     }
 
     stages {
-        stage('Checkout 📥') {
+        stage('Checkout..') {
             steps { checkout scm }
         }
         
-        stage('Build Image 🛠️') {
+        stage('Build Image..') {
             steps {
                 bat "docker build -t ${IMAGE_NAME}:${env.BUILD_ID} ."
                 bat "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
         
-        stage('Push to Docker Hub 🚀') {
+        stage('Push to Docker Hub..') {
             steps {
                 bat "echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin"
                 bat "docker push ${IMAGE_NAME}:${env.BUILD_ID}"
@@ -29,7 +29,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2 🌍') {
+        stage('Deploy to EC2..!!') {
             steps {
                 echo "Connecting to AWS EC2 and Deploying the App..."
                 // SSH Agent plugin Jenkins ko safely EC2 mein bhejega
