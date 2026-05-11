@@ -30,20 +30,12 @@ pipeline {
         }
         stage('Deploy to EC2 🌍') {
     steps {
-        echo "Fixing Windows Key Permissions and Deploying..."
+        echo "Shortcut Deployment via Git Bash..."
         withCredentials([sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'PEM_FILE')]) {
-            bat """
-            @echo off
-            :: 1. Remove Inheritance and all extra users from the temp PEM file
-            powershell -Command "icacls '%PEM_FILE%' /inheritance:r"
-            powershell -Command "icacls '%PEM_FILE%' /grant:r '%USERNAME%:R'"
-            powershell -Command "icacls '%PEM_FILE%' /grant:r 'SYSTEM:R'"
-            
-            :: 2. Now run the SSH command
-            ssh -i "%PEM_FILE%" -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest"
-            """
+            // "bat" ki jagah "sh" use kar, ye Windows par Git Bash dhoondh lega
+            sh "ssh -o StrictHostKeyChecking=no -i $PEM_FILE ${EC2_USER}@${EC2_IP} 'sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest'"
+                }
+            }
         }
-    }
-}
     }
 }
