@@ -31,12 +31,14 @@ pipeline {
 
         stage('Deploy to EC2 🌍') {
     steps {
-        echo "Direct SSH Deployment..."
-        // Hum credentials block use karenge SSH Agent ki jagah
-        withCredentials([sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'PEM_FILE')]) {
-            bat "ssh -i %PEM_FILE% -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} \"sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest\""
+        echo "Connecting to AWS EC2 via SSH Agent..."
+        // SSH Agent use karenge kyunki ye Windows service ke through permissions handle karta hai
+        sshagent(['ec2-key']) {
+            // Hum single quotes use kar rahe hain taaki security warning na aaye
+            // Aur -o StrictHostKeyChecking=no zaroori hai pehli baar ke liye
+            bat 'ssh -o StrictHostKeyChecking=no ' + "${EC2_USER}@${EC2_IP}" + ' "sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest"'
+                }
+            }
         }
-    }
-}
     }
 }
