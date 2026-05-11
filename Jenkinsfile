@@ -28,12 +28,12 @@ pipeline {
                 bat "docker push ${IMAGE_NAME}:latest"
             }
         }
-        stage('Deploy to EC2 🌍') {
+        stage('Deploy to EC2..!!') {
     steps {
-        echo "Shortcut Deployment via Git Bash..."
+        echo "Direct Deployment via Batch..."
         withCredentials([sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'PEM_FILE')]) {
-            // "bat" ki jagah "sh" use kar, ye Windows par Git Bash dhoondh lega
-            sh "ssh -o StrictHostKeyChecking=no -i $PEM_FILE ${EC2_USER}@${EC2_IP} 'sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest'"
+        
+            bat 'ssh -o StrictHostKeyChecking=no -i %PEM_FILE% ' + "${EC2_USER}@${EC2_IP}" + ' "sudo docker pull ${IMAGE_NAME}:latest && sudo docker stop live-app || exit 0 && sudo docker rm live-app || exit 0 && sudo docker run -d --name live-app -p 80:80 ${IMAGE_NAME}:latest"'
                 }
             }
         }
