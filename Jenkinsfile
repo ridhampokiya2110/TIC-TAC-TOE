@@ -30,30 +30,32 @@ pipeline {
         }
 
         stage('Deploy App 🎮') {
-            steps {
-                script {
-                    // 1. Terraform output se Public IP lena
-                    def serverIP = bat(script: "terraform -chdir=terraform output -raw instance_public_ip", returnStdout: true).trim()
-                    echo "Deploying Tic-Tac-Toe to: ${serverIP}"
+    steps {
+        script {
+            // 1. Fetch IP and clean the output
+            def rawIP = bat(script: "terraform -chdir=terraform output -raw instance_public_ip", returnStdout: true).trim()
+            
+            // Windows 'bat' output me aksar puri command repeat hoti hai, humein sirf aakhri line (IP) chahiye
+            def serverIP = rawIP.split('\r?\n').last().trim()
+            
+            echo "Target Server IP found: ${serverIP}"
 
-                    // 2. SSH Agent ke through deployment (using your day-89-key)
-                    // Windows Jenkins ke liye hum 'withCredentials' use karenge jo %PEM_PATH% create karega
-                    withCredentials([sshUserPrivateKey(credentialsId: 'day-89-key', keyFileVariable: 'PEM_PATH')]) {
-                        
-                        // Workspace ki files server par bhejna (excluding .git and terraform folders)
-                        // Pehle server par directory banate hain
-                        bat "ssh -i %PEM_PATH% -o StrictHostKeyChecking=no ubuntu@${serverIP} \"mkdir -p /home/ubuntu/app\""
-                        
-                        // Files copy karna
-                        bat "scp -i %PEM_PATH% -o StrictHostKeyChecking=no -r index.html style.css script.js deploy.sh ubuntu@${serverIP}:/home/ubuntu/app/"
-                        
-                        // Deploy script execute karna
-                        bat "ssh -i %PEM_PATH% -o StrictHostKeyChecking=no ubuntu@${serverIP} \"chmod +x /home/ubuntu/app/deploy.sh && sudo /home/ubuntu/app/deploy.sh\""
-                    }
-                }
+            // 2. Deployment using credentials
+            withCredentials([sshUserPrivateKey(credentialsId: 'day-89-key', keyFileVariable: 'PEM_PATH')]) {
+                
+                // Server par directory banana
+                bat "ssh -i %PEM_PATH% -o StrictHostKeyChecking=no ubuntu@${serverIP} \"mkdir -p /home/ubuntu/app\""
+                
+                // Files copy karna
+                bat "scp -i %PEM_PATH% -o StrictHostKeyChecking=no index.html style.css script.js deploy.sh ubuntu@${serverIP}:/home/ubuntu/app/"
+                
+                // Execution
+                bat "ssh -i %PEM_PATH% -o StrictHostKeyChecking=no ubuntu@${serverIP} \"chmod +x /home/ubuntu/app/deploy.sh && sudo /home/ubuntu/app/deploy.sh\""
             }
         }
     }
+}
+
 
     post {
         success {
