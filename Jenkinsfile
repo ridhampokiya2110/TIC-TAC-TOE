@@ -32,31 +32,28 @@ pipeline {
         stage('Deploy App 🎮') {
             steps {
                 script {
-                    // 1. Fetch IP and clean the output
+                    // 1. Fetch IP
                     def rawIP = bat(script: "terraform -chdir=terraform output -raw instance_public_ip", returnStdout: true).trim()
-                    def lines = rawIP.split('\r?\n')
-                    def serverIP = lines.find { it ==~ /^[0-9.]+/ }?.trim()
-                    
-                    if (!serverIP) { error "IP address nahi mila!" }
+                    def serverIP = rawIP.split('\r?\n').last().trim()
                     echo "Target Server IP found: ${serverIP}"
 
-                    // 2. Deployment
+                    // 2. Deployment with STRICT permissions
                     withCredentials([sshUserPrivateKey(credentialsId: 'day-89-key', keyFileVariable: 'PEM_PATH')]) {
                         
-                        // Sabse safe tarika Windows ke liye:
                         bat """
-                            icacls "%PEM_PATH%" /inheritance:r
-                            icacls "%PEM_PATH%" /grant:r *S-1-1-0:(R)
+                            :: 1. Inheritance disable karo (saari purani permissions hatao)
+                            icacls "%PEM_PATH%" /inheritance:r /t
+                            
+                            :: 2. Sirf current user ko Read permission do
+                            icacls "%PEM_PATH%" /grant:r "%USERNAME%":"(R)"
+                            
+                            :: 3. Verify karne ke liye (Optional: Console me dikhega)
+                            icacls "%PEM_PATH%"
                         """
-                        // Note: *S-1-1-0 "Everyone" ka universal ID hai, isme mapping ka error nahi aayega.
 
-                        // Server par directory banana
+                        // Ab SSH command bypass karega permissions check
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"mkdir -p /home/ubuntu/app\""
-                        
-                        // Files copy karna
                         bat "scp -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no index.html style.css script.js deploy.sh ubuntu@${serverIP}:/home/ubuntu/app/"
-                        
-                        // Execution
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"chmod +x /home/ubuntu/app/deploy.sh && sudo /home/ubuntu/app/deploy.sh\""
                     }
                 }
