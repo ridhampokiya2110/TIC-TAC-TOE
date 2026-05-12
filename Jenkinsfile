@@ -37,21 +37,17 @@ pipeline {
                     def serverIP = rawIP.split('\r?\n').last().trim()
                     echo "Target Server IP found: ${serverIP}"
 
-                    // 2. Deployment with Universal Permissions
+                    // 2. Deployment with Universal SIDs
                     withCredentials([sshUserPrivateKey(credentialsId: 'day-89-key', keyFileVariable: 'PEM_PATH')]) {
                         
+                        // Universal Windows Permissions Fix using SIDs
                         bat """
-                            :: 1. Reset and disable inheritance
-                            icacls "%PEM_PATH%" /reset
-                            icacls "%PEM_PATH%" /inheritance:r /t
-                            
-                            :: 2. Grant Read access to SYSTEM, Admins, and the current dynamic user
-                            icacls "%PEM_PATH%" /grant:r SYSTEM:"(R)"
-                            icacls "%PEM_PATH%" /grant:r Administrators Africa:"(R)"
-                            icacls "%PEM_PATH%" /grant:r "%USERNAME%":"(R)"
+                            icacls "%PEM_PATH%" /inheritance:r
+                            icacls "%PEM_PATH%" /grant:r *S-1-5-18:(R)
+                            icacls "%PEM_PATH%" /grant:r *S-1-5-32-544:(R)
                         """
 
-                        // Execute commands
+                        // Execute deployment commands
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"mkdir -p /home/ubuntu/app\""
                         bat "scp -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no index.html style.css script.js deploy.sh ubuntu@${serverIP}:/home/ubuntu/app/"
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"chmod +x /home/ubuntu/app/deploy.sh && sudo /home/ubuntu/app/deploy.sh\""
