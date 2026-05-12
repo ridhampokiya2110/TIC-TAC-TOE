@@ -1,22 +1,21 @@
 provider "aws" {
-  region = "eu-north-1" 
+  region = "us-east-1" // North Virginia
 }
 
 resource "aws_instance" "tic_tac_toe_server" {
-  ami           = "ami-0705383d0b3ee1b10" // Ubuntu 24.04 LTS for Stockholm
-  instance_type = "t3.micro"
-  key_name      = "day-88" // PEM file name without extension
+  ami           = "ami-0e2c8ccd4e0269736" // Latest Ubuntu 24.04 LTS in us-east-1
+  instance_type = "t2.micro"
+  key_name      = "day-88" // Make sure this key exists in us-east-1 region
 
   tags = {
     Name = "Tic-Tac-Toe-Automated"
   }
 
-  // Security group allow karne ke liye (Optional but recommended)
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
 }
 
 resource "aws_security_group" "jenkins_sg" {
-  name        = "jenkins-automated-sg"
+  name        = "jenkins-automated-sg-us-east"
   description = "Allow SSH and HTTP"
 
   ingress {
