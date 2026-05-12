@@ -11,11 +11,11 @@ resource "aws_instance" "tic_tac_toe_server" {
     Name = "Tic-Tac-Toe-Automated"
   }
 
-  vpc_security_group_ids = [aws_security_group.jenkins_sg_final.id]
+  vpc_security_group_ids = [aws_security_group.jenkins_sg_21.id]
 }
 
-resource "aws_security_group" "jenkins_sg" {
-  name        = "jenkins-automated-sg-us-east"
+resource "aws_security_group" "jenkins_sg_21" {
+  name        = "sg_jenkins_day_89"
   description = "Allow SSH and HTTP"
 
   ingress {
