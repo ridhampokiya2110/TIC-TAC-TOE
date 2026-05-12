@@ -40,15 +40,16 @@ pipeline {
                     if (!serverIP) { error "IP address nahi mila!" }
                     echo "Target Server IP found: ${serverIP}"
 
-                    // 2. Deployment with Permission Fix
+                    // 2. Deployment
                     withCredentials([sshUserPrivateKey(credentialsId: 'day-89-key', keyFileVariable: 'PEM_PATH')]) {
                         
-                        // Windows Permission Fix: Sirf current user ko access dena
+                        // Sabse safe tarika Windows ke liye:
                         bat """
                             icacls "%PEM_PATH%" /inheritance:r
-                            icacls "%PEM_PATH%" /grant:r "%USERNAME%":"(R)"
+                            icacls "%PEM_PATH%" /grant:r *S-1-1-0:(R)
                         """
-                        
+                        // Note: *S-1-1-0 "Everyone" ka universal ID hai, isme mapping ka error nahi aayega.
+
                         // Server par directory banana
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"mkdir -p /home/ubuntu/app\""
                         
