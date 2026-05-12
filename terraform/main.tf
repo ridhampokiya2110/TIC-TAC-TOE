@@ -4,7 +4,7 @@ provider "aws" {
 
 resource "aws_instance" "tic_tac_toe_server" {
   ami           = "ami-0e2c8ccd4e0269736" // Latest Ubuntu 24.04 LTS in us-east-1
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   key_name      = "day-88" // Make sure this key exists in us-east-1 region
 
   tags = {
