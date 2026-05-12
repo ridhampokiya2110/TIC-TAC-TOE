@@ -2,11 +2,20 @@ provider "aws" {
   region = "us-east-1" // North Virginia
 }
 
-resource "aws_instance" "tic_tac_toe_server" {
-  ami           = "ami-0e2c8ccd4e0269736" // Latest Ubuntu 24.04 LTS in us-east-1
-  instance_type = "t3.micro"
-  key_name      = "day-89" // Make sure this key exists in us-east-1 region
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] 
 
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+}
+
+resource "aws_instance" "tic_tac_toe_server" {
+  ami           = data.aws_ami.ubuntu.id 
+  instance_type = "t3.micro"             
+  key_name      = "day-89"
   tags = {
     Name = "Tic-Tac-Toe-Automated"
   }
