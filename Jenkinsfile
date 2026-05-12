@@ -30,32 +30,37 @@ pipeline {
         }
 
         stage('Deploy App 🎮') {
-    steps {
-        script {
-            // 1. Fetch IP and clean the output
-            def rawIP = bat(script: "terraform -chdir=terraform output -raw instance_public_ip", returnStdout: true).trim()
-            
-            // Windows 'bat' output me aksar puri command repeat hoti hai, humein sirf aakhri line (IP) chahiye
-            def serverIP = rawIP.split('\r?\n').last().trim()
-            
-            echo "Target Server IP found: ${serverIP}"
+            steps {
+                script {
+                    // 1. Fetch IP and clean the output
+                    def rawIP = bat(script: "terraform -chdir=terraform output -raw instance_public_ip", returnStdout: true).trim()
+                    
+                    // Windows fix: Filter out extra lines and get only the IP string
+                    def lines = rawIP.split('\r?\n')
+                    def serverIP = lines.find { it ==~ /^[0-9.]+/ }?.trim()
+                    
+                    if (!serverIP) {
+                        error "Bhai, IP address nahi mila! Terraform output check karo."
+                    }
+                    
+                    echo "Target Server IP found: ${serverIP}"
 
-            // 2. Deployment using credentials
-            withCredentials([sshUserPrivateKey(credentialsId: 'day-89-key', keyFileVariable: 'PEM_PATH')]) {
-                
-                // Server par directory banana
-                bat "ssh -i %PEM_PATH% -o StrictHostKeyChecking=no ubuntu@${serverIP} \"mkdir -p /home/ubuntu/app\""
-                
-                // Files copy karna
-                bat "scp -i %PEM_PATH% -o StrictHostKeyChecking=no index.html style.css script.js deploy.sh ubuntu@${serverIP}:/home/ubuntu/app/"
-                
-                // Execution
-                bat "ssh -i %PEM_PATH% -o StrictHostKeyChecking=no ubuntu@${serverIP} \"chmod +x /home/ubuntu/app/deploy.sh && sudo /home/ubuntu/app/deploy.sh\""
+                    // 2. Deployment using credentials (day-89-key)
+                    withCredentials([sshUserPrivateKey(credentialsId: 'day-89-key', keyFileVariable: 'PEM_PATH')]) {
+                        
+                        // Server par directory banana
+                        bat "ssh -i %PEM_PATH% -o StrictHostKeyChecking=no ubuntu@${serverIP} \"mkdir -p /home/ubuntu/app\""
+                        
+                        // Files copy karna (index.html, style.css, script.js, deploy.sh)
+                        bat "scp -i %PEM_PATH% -o StrictHostKeyChecking=no index.html style.css script.js deploy.sh ubuntu@${serverIP}:/home/ubuntu/app/"
+                        
+                        // Execution
+                        bat "ssh -i %PEM_PATH% -o StrictHostKeyChecking=no ubuntu@${serverIP} \"chmod +x /home/ubuntu/app/deploy.sh && sudo /home/ubuntu/app/deploy.sh\""
+                    }
+                }
             }
         }
     }
-}
-
 
     post {
         success {
