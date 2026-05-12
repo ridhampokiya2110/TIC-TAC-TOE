@@ -5,13 +5,13 @@ provider "aws" {
 resource "aws_instance" "tic_tac_toe_server" {
   ami           = "ami-0e2c8ccd4e0269736" // Latest Ubuntu 24.04 LTS in us-east-1
   instance_type = "t3.micro"
-  key_name      = "day-88" // Make sure this key exists in us-east-1 region
+  key_name      = "day-89" // Make sure this key exists in us-east-1 region
 
   tags = {
     Name = "Tic-Tac-Toe-Automated"
   }
 
-  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
+  vpc_security_group_ids = [aws_security_group.jenkins_sg_final.id]
 }
 
 resource "aws_security_group" "jenkins_sg" {
