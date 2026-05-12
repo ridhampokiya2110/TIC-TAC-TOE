@@ -2,8 +2,9 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_CREDS = credentials('dockerhub-creds')
-        IMAGE_NAME = "ridhampokiya/day87-app"
+        // AWS Credentials added in Jenkins
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
     }
 
     stages {
@@ -13,36 +14,42 @@ pipeline {
             }
         }
 
-        stage('Build & Push 🚀') {
+        stage('Terraform Init 🛠️') {
             steps {
-                // Windows par ho isliye 'bat' use kar rahe hain
-                bat "docker build -t ${IMAGE_NAME}:latest ."
-                bat "echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin"
-                bat "docker push ${IMAGE_NAME}:latest"
+                dir('terraform') {
+                    bat "terraform init"
+                }
             }
         }
-        
-        stage('Health Check 🩺') {
+
+        stage('Terraform Plan 📋') {
             steps {
-                echo "Checking Pipeline Health..."
-                bat "docker images"
+                dir('terraform') {
+                    bat "terraform plan"
+                }
+            }
+        }
+
+        stage('Terraform Apply 🚀') {
+            steps {
+                dir('terraform') {
+                    // This creates the EC2 in Stockholm automatically
+                    bat "terraform apply -auto-approve"
+                }
             }
         }
     }
 
-    // Post section stages ke BAHAR hota hai, par pipeline ke ANDAR
     post {
         always {
-            echo "Day 88: Cleaning up Workspace..."
-            cleanWs() 
+            echo "Day 89: Cleaning up workspace..."
+            cleanWs()
         }
         success {
-            echo "Mubarak ho Ridham! Day 88 Success."
-            // Agar Email setup hai toh ye chalega, warna sirf log dikhayega
-            echo "Notification: Build #${env.BUILD_NUMBER} is successful!"
+            echo "Congratulations Ridham! Infrastructure is LIVE in Stockholm. 🌍"
         }
         failure {
-            echo "Lafda ho gaya! Check the logs."
+            echo "Terraform failed. Check your AWS credentials or AMI ID."
         }
     }
 }
