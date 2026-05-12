@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // AWS Credentials added in Jenkins
         AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
     }
@@ -33,7 +32,6 @@ pipeline {
         stage('Terraform Apply 🚀') {
             steps {
                 dir('terraform') {
-                    // This creates the EC2 in Stockholm automatically
                     bat "terraform apply -auto-approve"
                 }
             }
@@ -41,15 +39,16 @@ pipeline {
     }
 
     post {
-        always {
-            echo "Day 89: Cleaning up workspace..."
-            cleanWs()
-        }
         success {
-            echo "Congratulations Ridham! Infrastructure is LIVE in Stockholm. 🌍"
+            echo "Day 89 Success: N. Virginia Server is UP! 🚀"
         }
         failure {
-            echo "Terraform failed. Check your AWS credentials or AMI ID."
+            echo "Terraform failed. Check Console Logs."
+        }
+
+        always {
+            echo "Pipeline Finished."
+            
         }
     }
 }
