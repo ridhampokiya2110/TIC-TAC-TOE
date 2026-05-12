@@ -21,17 +21,10 @@ pipeline {
             }
         }
 
-        stage('Terraform Plan 📋') {
-            steps {
-                dir('terraform') {
-                    bat "terraform plan"
-                }
-            }
-        }
-
         stage('Terraform Apply 🚀') {
             steps {
                 dir('terraform') {
+                    // Yahan -auto-approve zaroori hai
                     bat "terraform apply -auto-approve"
                 }
             }
@@ -40,15 +33,10 @@ pipeline {
 
     post {
         success {
-            echo "Day 89 Success: N. Virginia Server is UP! 🚀"
+            echo "Day 89: Infrastructure is LIVE in us-east-1! 🚀"
         }
         failure {
-            echo "Terraform failed. Check Console Logs."
-        }
-
-        always {
-            echo "Pipeline Finished."
-            
+            echo "Abhi bhi error hai? Console output check karo bhai."
         }
     }
 }
