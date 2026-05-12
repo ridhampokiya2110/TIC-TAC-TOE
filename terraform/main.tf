@@ -49,6 +49,6 @@ resource "aws_security_group" "jenkins_sg_21" {
   }
 }
 
-output "instance_ip" {
+output "instance_public_ip" {
   value = aws_instance.tic_tac_toe_server.public_ip
 }
