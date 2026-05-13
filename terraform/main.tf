@@ -24,7 +24,7 @@ resource "aws_instance" "tic_tac_toe_server" {
 }
 
 resource "aws_security_group" "jenkins_sg_21" {
-  name        = "sg_jenkins_day_89"
+  name        = "sg_jenkins_day_90"
   description = "Allow SSH and HTTP"
 
   ingress {
