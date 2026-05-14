@@ -16,9 +16,6 @@ resource "aws_instance" "tic_tac_toe_server" {
   ami           = data.aws_ami.ubuntu.id 
   instance_type = "t3.micro"             
   key_name      = "day-89"
-  tags = {
-    Name = "Tic-Tac-Toe-Automated"
-  }
 
   vpc_security_group_ids = [aws_security_group.jenkins_sg_21.id]
   user_data = <<-EOF
