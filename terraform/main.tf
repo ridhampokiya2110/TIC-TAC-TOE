@@ -21,6 +21,18 @@ resource "aws_instance" "tic_tac_toe_server" {
   }
 
   vpc_security_group_ids = [aws_security_group.jenkins_sg_21.id]
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt-get update -y
+              sudo apt-get install -y docker.io
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -aG docker ubuntu
+              EOF
+
+  tags = {
+    Name = "Day92-Docker-Server"
+  }
 }
 
 resource "aws_security_group" "jenkins_sg_21" {
@@ -48,6 +60,7 @@ resource "aws_security_group" "jenkins_sg_21" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 
 output "instance_public_ip" {
   value = aws_instance.tic_tac_toe_server.public_ip
