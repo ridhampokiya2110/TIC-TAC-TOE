@@ -1,22 +1,22 @@
 #!/bin/bash
-# 1. Update and Install Nginx
-sudo apt-get update -y
-sudo apt-get install nginx -y
 
-# 2. Start Nginx
-sudo systemctl start nginx
-sudo systemctl enable nginx
+# Navigate to the directory where Jenkins copied the files
+cd /home/ubuntu/app
 
-# 3. Cleanup existing files in Web Root
-sudo rm -rf /var/www/html/*
+echo "Starting Docker Deployment..."
 
-# 4. Copy your repo files to Nginx folder
-# Jenkins pipeline repo ko 'workspace' me clone karta hai
-# Hum wahan se files move karenge
-sudo cp -r /home/ubuntu/workspace/* /var/www/html/
+# 1. Build the new Docker image from the Dockerfile
+sudo docker build -t tic-tac-toe-app:latest .
 
-# 5. Fix permissions
-sudo chown -R www-data:www-data /var/www/html/
-sudo chmod -R 755 /var/www/html/
+# 2. Stop the running container (if it exists). 
+# The '|| true' prevents the script from crashing if it's the first time running.
+sudo docker stop game-container || true
 
-echo "Tic-Tac-Toe App Deployed Successfully!"
+# 3. Remove the old container
+sudo docker rm game-container || true
+
+# 4. Run the new container! 
+
+sudo docker run -d --name game-container -p 80:80 tic-tac-toe-app:latest
+
+echo "Deployment Complete! Container is running."
