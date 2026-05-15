@@ -29,28 +29,36 @@ pipeline {
             }
         }
 
-        stage('Deploy App 🎮') {
+        stage('Deploy App via Docker Hub 🐳☁️') {
             steps {
                 script {
-                    // 1. Fetch IP
+                    // Fetch dynamic IP from Terraform
                     def rawIP = bat(script: "terraform -chdir=terraform output -raw instance_public_ip", returnStdout: true).trim()
                     def serverIP = rawIP.split('\r?\n').last().trim()
                     echo "Target Server IP found: ${serverIP}"
 
-                    // 2. Deployment with Universal SIDs
-                    withCredentials([sshUserPrivateKey(credentialsId: 'day-89-key', keyFileVariable: 'PEM_PATH')]) {
+                    // 🔥 Add BOTH SSH Key and Docker Hub Credentials
+                    withCredentials([
+                        sshUserPrivateKey(credentialsId: 'day-89-key', keyFileVariable: 'PEM_PATH'),
+                        usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')
+                    ]) {
                         
-                        // Universal Windows Permissions Fix using SIDs
+                        // Windows Strict Permissions Fix
                         bat """
                             icacls "%PEM_PATH%" /inheritance:r
                             icacls "%PEM_PATH%" /grant:r *S-1-5-18:(R)
                             icacls "%PEM_PATH%" /grant:r *S-1-5-32-544:(R)
                         """
 
-                        // Execute deployment commands
+                        // 1. Create App Directory & Copy Files (Removed deploy.sh)
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"mkdir -p /home/ubuntu/app\""
-                        bat "scp -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no index.html style.css script.js deploy.sh Dockerfile ubuntu@${serverIP}:/home/ubuntu/app/"
-                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sed -i 's/\\r//g' /home/ubuntu/app/deploy.sh && chmod +x /home/ubuntu/app/deploy.sh && sudo /home/ubuntu/app/deploy.sh\""
+                        bat "scp -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no index.html style.css script.js Dockerfile ubuntu@${serverIP}:/home/ubuntu/app/"
+                        
+                        // 2. DOCKER HUB MAGIC: Login, Build & Push!
+                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker login -u ${DOCKER_USER} -p ${DOCKER_PASS} && cd /home/ubuntu/app && sudo docker build -t ${DOCKER_USER}/tic-tac-toe-app:latest . && sudo docker push ${DOCKER_USER}/tic-tac-toe-app:latest\""
+                        
+                        // 3. RUN: Stop old container and Run the newly pulled image
+                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker stop game-container || true && sudo docker rm game-container || true && sudo docker run -d --name game-container -p 80:80 ${DOCKER_USER}/tic-tac-toe-app:latest\""
                     }
                 }
             }
