@@ -25,6 +25,7 @@ resource "aws_instance" "tic_tac_toe_server" {
               sudo systemctl start docker
               sudo systemctl enable docker
               sudo usermod -aG docker ubuntu
+              curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
               EOF
 
   tags = {
