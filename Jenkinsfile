@@ -37,7 +37,6 @@ pipeline {
                     def serverIP = rawIP.split('\r?\n').last().trim()
                     echo "Target Server IP found: ${serverIP}"
 
-                    // 🔥 Add BOTH SSH Key and Docker Hub Credentials
                     withCredentials([
                         sshUserPrivateKey(credentialsId: 'day-89-key', keyFileVariable: 'PEM_PATH'),
                         usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')
@@ -50,15 +49,20 @@ pipeline {
                             icacls "%PEM_PATH%" /grant:r *S-1-5-32-544:(R)
                         """
 
-                        // 1. Create App Directory & Copy Files (Removed deploy.sh)
+                        // 1. Create App Directory & Copy Files
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"mkdir -p /home/ubuntu/app\""
                         bat "scp -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no index.html style.css script.js Dockerfile ubuntu@${serverIP}:/home/ubuntu/app/"
                         
-                        // 2. DOCKER HUB MAGIC: Login, Build & Push!
-                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker login -u ${DOCKER_USER} -p ${DOCKER_PASS} && cd /home/ubuntu/app && sudo docker build -t ${DOCKER_USER}/tic-tac-toe-app:latest . && sudo docker push ${DOCKER_USER}/tic-tac-toe-app:latest\""
+                        // 🔥 THE FIX: Wait for EC2 to finish installing Docker (cloud-init wait)
+                        echo "Waiting for EC2 to finish background installations..."
+                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"cloud-init status --wait\""
+
+                        // 2. DOCKER HUB MAGIC: Login, Build & Push! 
+                        // (Changed ${VAR} to %VAR% to fix Jenkins Security Warning)
+                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker login -u %DOCKER_USER% -p %DOCKER_PASS% && cd /home/ubuntu/app && sudo docker build -t %DOCKER_USER%/tic-tac-toe-app:latest . && sudo docker push %DOCKER_USER%/tic-tac-toe-app:latest\""
                         
                         // 3. RUN: Stop old container and Run the newly pulled image
-                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker stop game-container || true && sudo docker rm game-container || true && sudo docker run -d --name game-container -p 80:80 ${DOCKER_USER}/tic-tac-toe-app:latest\""
+                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker stop game-container || true && sudo docker rm game-container || true && sudo docker run -d --name game-container -p 80:80 %DOCKER_USER%/tic-tac-toe-app:latest\""
                     }
                 }
             }
