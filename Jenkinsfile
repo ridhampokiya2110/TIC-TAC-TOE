@@ -59,7 +59,7 @@ pipeline {
 
                         // 2. DOCKER HUB MAGIC: Login, Build & Push! 
                         // (Changed ${VAR} to %VAR% to fix Jenkins Security Warning)
-                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker login -u %DOCKER_USER% -p %DOCKER_PASS% && cd /home/ubuntu/app && sudo docker build -t %DOCKER_USER%/tic-tac-toe-app:latest . && sudo docker push %DOCKER_USER%/tic-tac-toe-app:latest\""
+                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker login -u %DOCKER_USER% -p %DOCKER_PASS% && cd /home/ubuntu/app && sudo docker build -t %DOCKER_USER%/tic-tac-toe-app:latest . && echo 'Starting Trivy Vulnerability Scan...' && sudo trivy image --severity HIGH,CRITICAL %DOCKER_USER%/tic-tac-toe-app:latest && sudo docker push %DOCKER_USER%/tic-tac-toe-app:latest\""
                         
                         // 3. RUN: Stop old container and Run the newly pulled image
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker stop game-container || true && sudo docker rm game-container || true && sudo docker run -d --name game-container -p 80:80 %DOCKER_USER%/tic-tac-toe-app:latest\""
