@@ -26,6 +26,8 @@ resource "aws_instance" "tic_tac_toe_server" {
               sudo systemctl enable docker
               sudo usermod -aG docker ubuntu
               curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+              curl -sfL https://get.k3s.io | sh -
+              sudo chmod 644 /etc/rancher/k3s/k3s.yaml
               EOF
 
   tags = {

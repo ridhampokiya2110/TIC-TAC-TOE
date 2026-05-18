@@ -49,20 +49,20 @@ pipeline {
                             icacls "%PEM_PATH%" /grant:r *S-1-5-32-544:(R)
                         """
 
-                        // 1. Create App Directory & Copy Files
+                        // 1. Create App Directory & Copy Files (Added -r for the k8s folder)
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"mkdir -p /home/ubuntu/app\""
-                        bat "scp -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no index.html style.css script.js Dockerfile ubuntu@${serverIP}:/home/ubuntu/app/"
+                        bat "scp -r -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no index.html style.css script.js Dockerfile k8s ubuntu@${serverIP}:/home/ubuntu/app/"
                         
-                        // 🔥 THE FIX: Wait for EC2 to finish installing Docker (cloud-init wait)
+                        // Wait for EC2 installations (Docker, Trivy, K3s)
                         echo "Waiting for EC2 to finish background installations..."
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"cloud-init status --wait\""
 
-                        // 2. DOCKER HUB MAGIC: Login, Build & Push! 
-                        // (Changed ${VAR} to %VAR% to fix Jenkins Security Warning)
+                        // 2. Build, Scan & Push Image
                         bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker login -u %DOCKER_USER% -p %DOCKER_PASS% && cd /home/ubuntu/app && sudo docker build -t %DOCKER_USER%/tic-tac-toe-app:latest . && echo 'Starting Trivy Vulnerability Scan...' && sudo trivy image --severity HIGH,CRITICAL %DOCKER_USER%/tic-tac-toe-app:latest && sudo docker push %DOCKER_USER%/tic-tac-toe-app:latest\""
                         
-                        // 3. RUN: Stop old container and Run the newly pulled image
-                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"sudo docker stop game-container || true && sudo docker rm game-container || true && sudo docker run -d --name game-container -p 80:80 %DOCKER_USER%/tic-tac-toe-app:latest\""
+                        // 3. 🔥 KUBERNETES DEPLOYMENT MAGIC! 
+                        // Sed command injects your exact Docker Hub username into the deployment.yaml, then applies it.
+                        bat "ssh -i \"%PEM_PATH%\" -o StrictHostKeyChecking=no ubuntu@${serverIP} \"cd /home/ubuntu/app && sed -i 's/DOCKER_USER_PLACEHOLDER/%DOCKER_USER%/g' k8s/deployment.yaml && sudo k3s kubectl apply -f k8s/\""
                     }
                 }
             }
