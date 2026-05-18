@@ -16,15 +16,25 @@ resource "aws_instance" "tic_tac_toe_server" {
   ami           = data.aws_ami.ubuntu.id 
   instance_type = "t3.micro"             
   key_name      = "day-89"
-  tags = {
-    Name = "Tic-Tac-Toe-Automated"
-  }
 
   vpc_security_group_ids = [aws_security_group.jenkins_sg_21.id]
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt-get update -y
+              sudo apt-get install -y docker.io
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -aG docker ubuntu
+              curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+              EOF
+
+  tags = {
+    Name = "Day92-Docker-Server"
+  }
 }
 
 resource "aws_security_group" "jenkins_sg_21" {
-  name        = "sg_jenkins_day_89"
+  name        = "sg_jenkins_day_92"
   description = "Allow SSH and HTTP"
 
   ingress {
@@ -49,6 +59,7 @@ resource "aws_security_group" "jenkins_sg_21" {
   }
 }
 
-output "instance_ip" {
+
+output "instance_public_ip" {
   value = aws_instance.tic_tac_toe_server.public_ip
 }
